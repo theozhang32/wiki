@@ -32,6 +32,12 @@ wiki/         ← 知识库（Agent 全权维护）—— 人类阅读、评论�
 AGENTS.md     ← 本文件（Schema 规则书）—— 人类与 Agent 共同演化
 ```
 
+**补充目录**（不打破三层架构）：
+
+```
+schema/       ← AGENTS.md 的补充材料（方法论、页面细则、模板参考）—— 详见 schema/README.md
+```
+
 ### 2.1 raw/ — 原始来源层
 - **规则**：Agent **绝对不可修改** raw/ 下的任何文件
 - **用途**：存放原始文章、论文、剪藏网页、笔记、PDF 等
@@ -44,14 +50,23 @@ AGENTS.md     ← 本文件（Schema 规则书）—— 人类与 Agent 共同�
 
 ### 2.2 wiki/ — 知识库层
 - **规则**：Agent 拥有完整写入权限；人类可直接编辑，但必须在下次会话中告知 Agent 改了什么
-- **子目录**：
-  - `wiki/sources/` — 每篇 raw 来源的摘要页（1 来源 = 1 页面）
-  - `wiki/entities/` — 实体页：人物、组织、产品、地点
-  - `wiki/concepts/` — 概念页：想法、框架、方法论、理论
-  - `wiki/syntheses/` — 综合页：跨来源分析、对比、主题研究
+- **子目录**（与 `type` frontmatter 一一对应）：
+  - `wiki/sources/` — 每篇 raw 来源的摘要页（1 来源 = 1 页面，`type: source`）
+  - `wiki/entities/` — 实体页：人物、组织、产品、地点（`type: entity`）
+  - `wiki/concepts/` — 概念页：想法、框架、方法论、理论（`type: concept`）
+  - `wiki/syntheses/` — 综合页：跨来源主题研究、演化中的论点（`type: synthesis`）
+  - `wiki/comparisons/` — 对比页：两个或多个主体的并排分析（`type: comparison`）
   - `wiki/index.md` — 全 wiki 目录（每次 Ingest/Query 后更新）
   - `wiki/log.md` — 追加-only 操作日志（grep 可解析）
   - `wiki/overview.md` — 高层综合：当前论点、论点历史、开放问题、已知矛盾
+
+### 2.3 schema/ — 规则书补充
+- **规则**：Agent 可读写；人类与 Agent 共同演化
+- **定位**：支撑 `AGENTS.md` 编写的补充材料，**不是第四层**。运行时约束以 `AGENTS.md` 为准；细则、长模板、外部参考放 `schema/`
+- **子目录与文件**：
+  - `schema/methodology.md` — Karpathy LLM Wiki 方法论
+  - `schema/comparisons-slug.md` — Comparison 页 slug 命名细则
+  - `schema/README.md` — 本目录索引与维护规则
 
 ---
 
@@ -61,7 +76,7 @@ AGENTS.md     ← 本文件（Schema 规则书）—— 人类与 Agent 共同�
 
 ```yaml
 ---
-type: source | entity | concept | synthesis | query
+type: source | entity | concept | synthesis | comparison
 title: "Human Readable Title"
 tags: [tag1, tag2]
 sources: [source-slug.md]         # 支撑本页的 raw 来源文件名
@@ -76,7 +91,7 @@ confidence: high | medium | low | uncertain   # 内容可信度
 
 | 字段 | 必填 | 说明 |
 |------|:----:|------|
-| `type` | ✅ | 页面类型：source/entity/concept/synthesis/query |
+| `type` | ✅ | 页面类型，必须与所在子目录一致：`sources/`→`source`，`entities/`→`entity`，`concepts/`→`concept`，`syntheses/`→`synthesis`，`comparisons/`→`comparison` |
 | `title` | ✅ | 人类可读的页面标题（Title Case） |
 | `tags` | ✅ | 主题标签数组，至少 1 个 |
 | `sources` | ✅ | 关联的 raw 来源文件名（相对 raw/ 根目录） |
@@ -196,7 +211,60 @@ confidence: medium
 - supports: [[Page]] — 一句话解释
 ```
 
-### 4.4 Synthesis 页（`wiki/syntheses/<kebab-case-slug>.md`）
+### 4.4 Comparison 页（`wiki/comparisons/<slug-a>-vs-<slug-b>.md`）
+
+> Slug 细则见 [schema/comparisons-slug.md](./schema/comparisons-slug.md)。参考 [Pratiyush/llm-wiki](https://github.com/Pratiyush/llm-wiki) 的字母序 `-vs-` 规范与 [MLMario/wiki-llm](https://github.com/MLMario/wiki-llm) 的 comparisons 目录实践。
+
+```markdown
+---
+type: comparison
+title: "A vs B"
+tags: [comparison, topic-tag]
+sources: [source1.md, source2.md]
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+explored: false
+confidence: medium
+---
+
+## Summary
+一句话说明对比目的与当前结论倾向。
+
+## Subjects
+- [[Entity or Concept A]] — 在本对比中的角色
+- [[Entity or Concept B]] — 在本对比中的角色
+
+## Comparison
+
+| Dimension | A | B |
+|-----------|---|---|
+| 维度 1 | ... | ... |
+| 维度 2 | ... | ... |
+
+## Key Differences
+- 差异 1（附来源）
+- 差异 2
+
+## When to Choose Which
+- 选 A 的场景
+- 选 B 的场景
+
+## Counter-arguments
+[对比框架本身有何局限？是否遗漏重要维度？]
+
+## Data gaps
+[缺少哪些并排数据？还需要哪些来源？]
+
+## Related Pages
+- [[相关概念]]
+- [[相关实体]]
+```
+
+**Slug 速查**：
+- 二元对比：`<slug-a>-vs-<slug-b>.md`，两侧 slug **字母序**排列（保证每对只有一个规范文件）
+- 多元对比（3+）：描述性 kebab-case，如 `vector-database-landscape.md`（不用 `a-vs-b-vs-c`）
+
+### 4.5 Synthesis 页（`wiki/syntheses/<kebab-case-slug>.md`）
 
 ```markdown
 ---
@@ -227,7 +295,7 @@ confidence: medium
 - [[相关实体]]
 ```
 
-### 4.5 Overview 页（`wiki/overview.md`）—— 最重要的文件
+### 4.6 Overview 页（`wiki/overview.md`）—— 最重要的文件
 
 ```markdown
 ## Current Thesis
@@ -277,7 +345,7 @@ confidence: medium
    - 如果是新信息 → 正常整合
    - 如果是真实矛盾 → 在双方页面添加 `## Contradictions` 节，状态设为 `open`
    - **绝不静默覆盖**矛盾信息
-8. **Bias Check**：每个 concept/source/synthesis 页面必须包含：
+8. **Bias Check**：每个 concept/source/synthesis/comparison 页面必须包含：
    - `## Counter-arguments` — 什么在反驳本页主张
    - `## Data gaps` — 我们不知道什么
 9. **更新 Overview**：如果新来源显著改变了综合观点，修订 `wiki/overview.md`
@@ -313,7 +381,9 @@ confidence: medium
    - 优先使用 wiki 内容，而非自身训练知识
    - 用 `[[Page Title]]` 做内联引用
    - 在对话中输出答案
-5. **默认归档**：综合答案后，询问用户是否保存为 `wiki/syntheses/` 或 `wiki/query/` 页面。**默认归档**，除非用户明确说「不要保存」。好答案不应消失在聊天记录中。
+5. **默认归档**：综合答案后，询问用户是否保存为 wiki 页面。**默认归档**，除非用户明确说「不要保存」。好答案不应消失在聊天记录中。
+   - 「A 和 B 有何不同」类问题 → `wiki/comparisons/`（`type: comparison`）
+   - 跨来源综合、主题研究 → `wiki/syntheses/`（`type: synthesis`）
 6. **追加 Log**：
    ```markdown
    ## [YYYY-MM-DD] query | <问题摘要>
@@ -340,6 +410,7 @@ confidence: medium
 | **概念缺口** | 找出频繁提到但无独立页面的概念 | ❌ 仅报告 |
 | **陈旧内容** | 标记超过 6 个月未更新且可能被新来源取代的页面 | ❌ 仅报告 |
 | **质量门** | 检查页面长度（15-120 行）、是否过度堆砌、是否过于单薄 | ❌ 仅报告 |
+| **Comparison slug** | 检查 `wiki/comparisons/` 中二元对比 slug 是否字母序、`-vs-` 格式是否正确 | ✅ 自动修复 |
 
 **矛盾解决协议**：
 
@@ -373,6 +444,12 @@ confidence: medium
   - ✅ `retrieval-augmented-generation.md`
   - ❌ `Andrej Karpathy.md`
   - ❌ `retrieval_augmented_generation.md`
+- **Comparison 页**（`wiki/comparisons/`）：
+  - 二元：`<slug-a>-vs-<slug-b>.md`，slug 按字母序排列 — 详见 [schema/comparisons-slug.md](./schema/comparisons-slug.md)
+  - ✅ `claude-sonnet-4-vs-gpt-5.md`
+  - ✅ `llm-wiki-vs-rag.md`
+  - ❌ `gpt-5-vs-claude-sonnet-4.md`（顺序错误，应字母序）
+  - ❌ `a-vs-b-vs-c.md`（多元对比用描述性 slug）
 
 ### 6.2 页面标题
 - **标题**：Title Case（首字母大写）
@@ -390,6 +467,7 @@ confidence: medium
 ### 6.4 目录深度
 - `wiki/` 只支持**一级主题子目录**
 - ✅ `wiki/concepts/attention-mechanism.md`
+- ✅ `wiki/comparisons/rag-vs-llm-wiki.md`
 - ❌ `wiki/concepts/nlp/attention-mechanism.md`
 
 ---
@@ -397,7 +475,7 @@ confidence: medium
 ## 7. 质量门控
 
 ### 7.1 Bias Check（偏见检查）
-每篇 concept、source、synthesis 页面必须包含：
+每篇 concept、source、synthesis、comparison 页面必须包含：
 
 ```markdown
 ## Counter-arguments
@@ -454,6 +532,9 @@ confidence: medium
 
 ## Syntheses
 - [[Synthesis Title]] — 一行摘要
+
+## Comparisons
+- [[A vs B]] — 一行摘要
 ```
 
 - 每次 Ingest/Query/Sync 后更新
@@ -486,6 +567,7 @@ confidence: medium
 | `raw/` | 人类 | Agent **绝对不可修改** |
 | `wiki/` | Agent | 人类可直接编辑，但下次会话必须告知 Agent 改了什么 |
 | `AGENTS.md` | 共同所有 | 人类和 Agent 共同迭代；变更记录在 `## Schema History` |
+| `schema/` | 共同所有 | 补充 `AGENTS.md` 的细则与参考；变更同步记录 Schema History |
 | `wiki/overview.md` | Agent | 人类应定期审阅 `Current Thesis`，确认或修正 |
 
 ---
@@ -517,3 +599,4 @@ Obsidian Git 插件可配置为每 5 分钟自动 commit。
      超过 20 条时，将旧条目归档到 .agents/schema-history.md -->
 
 - [2026-08-22] — 初始 Schema 创建 | Trigger: 初始化 LLM Wiki 知识库
+- [2026-08-22] — 新增 `wiki/comparisons/` 与 `type: comparison`；`schema/` 作为规则书补充目录；frontmatter `type` 与 wiki 子目录对齐；移除未使用的 `query` 类型；Index 增加 Comparisons 分节；补充 Comparison slug 细则（参考 Pratiyush/llm-wiki、MLMario/wiki-llm） | Trigger: Schema 修订
