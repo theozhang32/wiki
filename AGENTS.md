@@ -47,7 +47,37 @@ schema/       ← AGENTS.md 的补充材料（方法论等背景文档）
   - `raw/books/` — 书籍章节或读书笔记
   - `raw/clippings/` — Obsidian Web Clipper 的收件箱（Ingest 时自动分类）
   - `raw/codes/` — 源代码快照与分析材料
+  - `raw/projects/` — 课题研究材料
+  - `raw/scratch/` — 研究草稿纸（见下方规则）
   - `raw/assets/` — 图片、图表、附件
+
+#### raw/scratch/ — 草稿纸
+
+研究过程中的中间产物，不是最终知识，但很有价值。遵循「草稿 → 初稿 → 定稿」流转：
+
+| 阶段 | 位置 | 说明 |
+|------|------|------|
+| 草稿 | `raw/scratch/` | 人类随意书写，轻量 frontmatter |
+| 初稿 | `wiki/`（`explored: false`） | Agent 编译产出，待人类审阅 |
+| 定稿 | `wiki/`（`explored: true`） | 人类审阅后手动标记 |
+
+**规则**：
+- 随意写，不需要完整 frontmatter
+- Agent **不主动处理** `raw/scratch/` 里的文件（除非用户明确说「请处理 `raw/scratch/xxx.md`」）
+- 草稿成熟后，用户触发编译：「请把 `raw/scratch/2026-08-22-kv-cache-idea.md` 编译进 wiki」
+
+**格式建议**（轻量）：
+
+```yaml
+---
+date: 2026-08-22
+topic: "KV Cache 压缩"
+source: "和 @同事 的午餐讨论"
+---
+
+## 
+## 
+```
 
 ### 2.2 wiki/ — 知识库层
 - **规则**：Agent 拥有完整写入权限；人类可直接编辑，但必须在下次会话中告知 Agent 改了什么
@@ -384,7 +414,27 @@ confidence: medium
 
 ---
 
-### 5.3 LINT — 健康检查
+### 5.3 COMPILE — 编译草稿进 wiki
+
+**触发方式**：用户说「请把 `raw/scratch/xxx.md` 编译进 wiki」
+
+**执行步骤**（与 INGEST 相同，区别见下）：
+
+1. **读取草稿**：完整阅读 `raw/scratch/` 下的目标文件
+2. **讨论框架**（默认执行）：向用户总结关键要点，说明编译方向，询问是否正确。仅当用户说「skip discuss」时跳过
+3. **来源保真检查**：数字、日期、直接引用必须在草稿中可定位
+4. **写 Source 页**：在 `wiki/sources/` 创建/更新摘要页
+5. **提取实体**、**提取概念**、**矛盾检测**、**Bias Check**
+6. **更新 Overview**、**Index**、**追加 Log**（`compile | <草稿标题>`）
+
+**与 INGEST 的区别**：
+- 输入来自 `raw/scratch/`，非标准来源目录
+- Log disposition 使用 `Compile`
+- 产出 wiki 页面 `explored: false`（初稿），人类审阅后改为 `true`（定稿）
+
+---
+
+### 5.4 LINT — 健康检查
 
 **触发方式**：用户说「请 Lint」或「健康检查」
 
@@ -596,3 +646,4 @@ Obsidian Git 插件可配置为每 5 分钟自动 commit。
 - [2026-08-22] — 初始 Schema 创建 | Trigger: 初始化 LLM Wiki 知识库
 - [2026-08-22] — 新增 `wiki/comparisons/` 与 `type: comparison`；`schema/` 作为规则书补充目录；frontmatter `type` 与 wiki 子目录对齐；移除未使用的 `query` 类型；Index 增加 Comparisons 分节；补充 Comparison slug 细则 | Trigger: Schema 修订
 - [2026-08-22] — Comparison slug 细则并入 `AGENTS.md`；`schema/` 改为人类专属只读；新增 `raw/codes/` | Trigger: Schema 修订
+- [2026-08-22] — 新增 `raw/projects/`、`raw/scratch/`；草稿 → 初稿 → 定稿流转机制；新增 COMPILE 工作流 | Trigger: Schema 修订
