@@ -1,4 +1,5 @@
-> 作者：李博杰 [Github地址](https://github.com/bojieli/ai-agent-book)
+> 作者：李博杰 
+> [原文地址](https://github.com/bojieli/ai-agent-book)
 
 # 第一章 Agent基础知识
 
